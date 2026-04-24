@@ -37,6 +37,7 @@ void main() async {
             signalingService,
             p2pService,
             storageService,
+            mediaService,
           ),
         ),
         Provider<MediaService>.value(value: mediaService),

@@ -294,6 +294,9 @@ Future<void> main(List<String> args) async {
     // File download
     if (path.startsWith('files/')) {
       final fileName = path.substring(6);
+      if (fileName.contains('..') || fileName.contains('/') || fileName.contains('\\')) {
+        return shelf.Response.forbidden('Invalid filename', headers: _corsHeaders);
+      }
       return handleDownload(request, fileName);
     }
 
@@ -359,40 +362,73 @@ String _getMimeType(String ext) {
   }
 }
 
-/// Parse simple multipart form data
+/// Parse simple multipart form data (operates on raw bytes to avoid corruption)
 List<Map<String, dynamic>> _parseMultipart(List<int> body, String boundary) {
   final parts = <Map<String, dynamic>>[];
-  final bodyStr = utf8.decode(body, allowMalformed: true);
+  final boundaryBytes = utf8.encode('--$boundary');
+  final rawBytes = Uint8List.fromList(body);
+  final crlfCrlf = [13, 10, 13, 10]; // \r\n\r\n
 
-  final sections = bodyStr.split('--$boundary');
+  // Find all boundary positions
+  final positions = <int>[];
+  for (var i = 0; i <= rawBytes.length - boundaryBytes.length; i++) {
+    var match = true;
+    for (var j = 0; j < boundaryBytes.length; j++) {
+      if (rawBytes[i + j] != boundaryBytes[j]) {
+        match = false;
+        break;
+      }
+    }
+    if (match) positions.add(i);
+  }
 
-  for (final section in sections) {
-    if (section.trim() == '--' || section.trim().isEmpty) continue;
+  for (var p = 0; p < positions.length - 1; p++) {
+    final start = positions[p] + boundaryBytes.length;
+    final end = positions[p + 1];
 
-    final headerEnd = section.indexOf('\r\n\r\n');
+    // Skip leading \r\n after boundary
+    var contentStart = start;
+    if (contentStart + 2 <= end &&
+        rawBytes[contentStart] == 13 &&
+        rawBytes[contentStart + 1] == 10) {
+      contentStart += 2;
+    }
+
+    // Find \r\n\r\n separator between headers and body
+    var headerEnd = -1;
+    for (var i = contentStart; i <= end - 4; i++) {
+      if (rawBytes[i] == crlfCrlf[0] &&
+          rawBytes[i + 1] == crlfCrlf[1] &&
+          rawBytes[i + 2] == crlfCrlf[2] &&
+          rawBytes[i + 3] == crlfCrlf[3]) {
+        headerEnd = i;
+        break;
+      }
+    }
     if (headerEnd == -1) continue;
 
-    final headers = section.substring(0, headerEnd);
-    final filenameMatch = RegExp(r'filename="([^"]*)"').firstMatch(headers);
+    // Parse headers as UTF-8 text (headers are always ASCII)
+    final headerStr = utf8.decode(rawBytes.sublist(contentStart, headerEnd));
+    final filenameMatch = RegExp(r'filename="([^"]*)"').firstMatch(headerStr);
     if (filenameMatch == null) continue;
 
     final filename = filenameMatch.group(1) ?? 'file';
-    // Get the byte offset for the content
-    final headerByteLen = utf8.encode(section.substring(0, headerEnd + 4)).length;
-    final sectionBytes = utf8.encode(section);
-    final contentBytes = sectionBytes.sublist(headerByteLen);
+    final bodyStart = headerEnd + 4;
 
-    // Remove trailing \r\n
-    final trimmed = contentBytes.length > 2 &&
-            contentBytes[contentBytes.length - 2] == 13 &&
-            contentBytes[contentBytes.length - 1] == 10
-        ? contentBytes.sublist(0, contentBytes.length - 2)
-        : contentBytes;
+    // Remove trailing \r\n before next boundary
+    var bodyEnd = end;
+    if (bodyEnd >= 2 &&
+        rawBytes[bodyEnd - 2] == 13 &&
+        rawBytes[bodyEnd - 1] == 10) {
+      bodyEnd -= 2;
+    }
 
-    parts.add({
-      'filename': filename,
-      'bytes': Uint8List.fromList(trimmed),
-    });
+    if (bodyStart < bodyEnd) {
+      parts.add({
+        'filename': filename,
+        'bytes': Uint8List.fromList(rawBytes.sublist(bodyStart, bodyEnd)),
+      });
+    }
   }
 
   return parts;

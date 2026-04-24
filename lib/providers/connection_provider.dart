@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:p2p_messenger/core/constants/app_constants.dart';
+import 'package:p2p_messenger/services/media_service.dart';
 import 'package:p2p_messenger/services/p2p_service.dart';
 import 'package:p2p_messenger/services/signaling_service.dart';
 import 'package:p2p_messenger/services/storage_service.dart';
@@ -12,11 +13,12 @@ class ConnectionProvider extends ChangeNotifier {
   final SignalingService _signaling;
   final P2PService _p2p;
   final StorageService _storage;
+  final MediaService _media;
   ConnectionState _state = ConnectionState.disconnected;
   StreamSubscription<bool>? _connectionSubscription;
   String _serverUrl = AppConstants.defaultSignalingServer;
 
-  ConnectionProvider(this._signaling, this._p2p, this._storage) {
+  ConnectionProvider(this._signaling, this._p2p, this._storage, this._media) {
     final savedUrl = _storage.getServerUrl();
     if (savedUrl != null) _serverUrl = savedUrl;
   }
@@ -44,6 +46,7 @@ class ConnectionProvider extends ChangeNotifier {
   Future<void> updateServerUrl(String url) async {
     _serverUrl = url;
     await _storage.saveServerUrl(url);
+    _media.updateServerUrl(url);
     notifyListeners();
   }
 
