@@ -28,6 +28,7 @@ class ChatInput extends StatefulWidget {
 class _ChatInputState extends State<ChatInput> {
   final _controller = TextEditingController();
   final _focusNode = FocusNode();
+  final _keyboardFocusNode = FocusNode();
   bool _hasText = false;
   Timer? _typingTimer;
   bool _typingThrottled = false;
@@ -66,6 +67,7 @@ class _ChatInputState extends State<ChatInput> {
   void dispose() {
     _controller.dispose();
     _focusNode.dispose();
+    _keyboardFocusNode.dispose();
     _typingTimer?.cancel();
     super.dispose();
   }
@@ -110,7 +112,7 @@ class _ChatInputState extends State<ChatInput> {
                   child: Container(
                     constraints: const BoxConstraints(maxHeight: 120),
                     child: KeyboardListener(
-                      focusNode: FocusNode(),
+                      focusNode: _keyboardFocusNode,
                       onKeyEvent: (event) {
                         if (event is KeyDownEvent &&
                             event.logicalKey == LogicalKeyboardKey.enter &&

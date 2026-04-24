@@ -243,7 +243,7 @@ class ChatProvider extends ChangeNotifier {
     }
 
     final chatIdx = _chats.indexWhere((c) => c.id == chatId);
-    if (chatIdx != -1) {
+    if (chatIdx != -1 && idx != -1) {
       _chats[chatIdx] = _chats[chatIdx].copyWith(lastMessage: _messages[chatId]![idx]);
     }
 

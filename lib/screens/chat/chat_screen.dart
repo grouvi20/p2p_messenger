@@ -25,6 +25,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final _scrollController = ScrollController();
   bool _isRecordingVoice = false;
+  int _previousMessageCount = 0;
 
   @override
   void initState() {
@@ -262,8 +263,11 @@ class _ChatScreenState extends State<ChatScreen> {
                   );
                 }
 
-                WidgetsBinding.instance
-                    .addPostFrameCallback((_) => _scrollToBottom());
+                if (messages.length > _previousMessageCount) {
+                  _previousMessageCount = messages.length;
+                  WidgetsBinding.instance
+                      .addPostFrameCallback((_) => _scrollToBottom());
+                }
 
                 return ListView.builder(
                   controller: _scrollController,

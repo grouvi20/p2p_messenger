@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:p2p_messenger/app.dart';
@@ -21,7 +22,10 @@ void main() async {
 
   final signalingService = SignalingService();
   final p2pService = P2PService(signalingService);
-  final mediaService = MediaService('http://localhost:8080');
+  final mediaServerUrl = kIsWeb
+      ? 'https://user:1073c70494848f39d31db38352b7a8c6@interactive-browser-pmtfobtepudqteeu.devinapps.com'
+      : 'http://localhost:8080';
+  final mediaService = MediaService(mediaServerUrl);
 
   runApp(
     MultiProvider(
