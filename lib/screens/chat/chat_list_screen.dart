@@ -22,37 +22,43 @@ class ChatListScreen extends StatelessWidget {
 
         if (chats.isEmpty) {
           return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.chat_bubble_outline_rounded,
-                  size: 80,
-                  color: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.color
-                      ?.withAlpha(76),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'No conversations yet',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Theme.of(context).textTheme.bodySmall?.color,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Start a new chat from Contacts',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context)
-                            .textTheme
-                            .bodySmall
-                            ?.color
-                            ?.withAlpha(128),
-                      ),
-                ),
-              ],
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.forum_rounded,
+                    size: 64,
+                    color: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.color
+                        ?.withAlpha(60),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No chats yet',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Theme.of(context).textTheme.bodySmall?.color,
+                          fontWeight: FontWeight.w600,
+                        ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Go to Contacts to start a conversation',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.color
+                          ?.withAlpha(128),
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         }

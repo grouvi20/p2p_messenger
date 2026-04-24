@@ -142,17 +142,17 @@ class _ChatScreenState extends State<ChatScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(
-                          Icons.lock_rounded,
+                          Icons.waving_hand_rounded,
                           size: 48,
                           color: Theme.of(context)
                               .textTheme
                               .bodySmall
                               ?.color
-                              ?.withAlpha(76),
+                              ?.withAlpha(100),
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'Messages are P2P encrypted',
+                          'Say hello!',
                           style: TextStyle(
                             color: Theme.of(context)
                                 .textTheme

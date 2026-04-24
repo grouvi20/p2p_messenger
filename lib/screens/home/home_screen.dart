@@ -64,45 +64,46 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       body: Column(
         children: [
-          // Connection status bar
-          if (!conn.isConnected)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          // Connection banner - only when not connected
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            height: conn.isConnected ? 0 : 36,
+            clipBehavior: Clip.hardEdge,
+            decoration: BoxDecoration(
               color: Colors.orange.shade700,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Connecting to server...',
-                    style: TextStyle(color: Colors.white, fontSize: 13),
-                  ),
-                ],
-              ),
             ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Connecting...',
+                  style: TextStyle(color: Colors.white, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
           Expanded(
             child: isDesktop ? _buildDesktopLayout() : _buildMobileLayout(),
           ),
         ],
       ),
-      bottomNavigationBar:
-          isDesktop ? null : _buildBottomNav(),
+      bottomNavigationBar: isDesktop ? null : _buildBottomNav(),
     );
   }
 
   Widget _buildDesktopLayout() {
     return Row(
       children: [
-        // Desktop side navigation
+        // Side nav
         NavigationRail(
           selectedIndex: _currentIndex,
           onDestinationSelected: (index) =>
@@ -113,7 +114,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Icon(
               Icons.chat_bubble_rounded,
               color: Theme.of(context).colorScheme.primary,
-              size: 32,
+              size: 28,
             ),
           ),
           destinations: const [
@@ -136,7 +137,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         const VerticalDivider(width: 1),
 
-        // Chat list panel
+        // Left panel
         if (_currentIndex == 0)
           SizedBox(
             width: Responsive.chatListWidth(context),
@@ -201,42 +202,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildChatListHeader() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+      child: Row(
         children: [
-          Row(
-            children: [
-              Text(
-                'Chats',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const Spacer(),
-              IconButton(
-                icon: const Icon(Icons.edit_square),
-                onPressed: () {
-                  setState(() => _currentIndex = 1);
-                },
-              ),
-            ],
+          Text(
+            'Chats',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
           ),
-          const SizedBox(height: 8),
-          TextField(
-            decoration: InputDecoration(
-              hintText: 'Search chats...',
-              prefixIcon: const Icon(Icons.search_rounded, size: 20),
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 10,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
-              ),
-            ),
+          const Spacer(),
+          IconButton(
+            icon: const Icon(Icons.edit_square),
+            tooltip: 'New chat',
+            onPressed: () {
+              setState(() => _currentIndex = 1);
+            },
           ),
         ],
       ),
@@ -250,7 +231,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           Icon(
             Icons.chat_bubble_outline_rounded,
-            size: 80,
+            size: 64,
             color: Theme.of(context)
                 .textTheme
                 .bodySmall
@@ -259,14 +240,14 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Select a chat to start messaging',
+            'Select a chat',
             style: TextStyle(
               fontSize: 16,
               color: Theme.of(context)
                   .textTheme
                   .bodySmall
                   ?.color
-                  ?.withAlpha(128),
+                  ?.withAlpha(100),
             ),
           ),
         ],

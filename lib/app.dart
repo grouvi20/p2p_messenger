@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:p2p_messenger/core/theme/app_theme.dart';
 import 'package:p2p_messenger/providers/auth_provider.dart';
+import 'package:p2p_messenger/providers/chat_provider.dart';
 import 'package:p2p_messenger/providers/connection_provider.dart';
 import 'package:p2p_messenger/providers/theme_provider.dart';
 import 'package:p2p_messenger/screens/auth/login_screen.dart';
@@ -34,7 +35,19 @@ class MessengerApp extends StatelessWidget {
             }
           });
 
-          return const HomeScreen();
+          // Re-provide ChatProvider? as non-nullable ChatProvider
+          // so downstream consumers can use context.read<ChatProvider>()
+          final chatProvider = context.watch<ChatProvider?>();
+          if (chatProvider == null) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+
+          return ChangeNotifierProvider<ChatProvider>.value(
+            value: chatProvider,
+            child: const HomeScreen(),
+          );
         },
       ),
     );

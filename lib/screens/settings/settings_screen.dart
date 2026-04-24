@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:p2p_messenger/providers/auth_provider.dart';
 import 'package:p2p_messenger/providers/connection_provider.dart';
@@ -14,6 +15,7 @@ class SettingsScreen extends StatelessWidget {
     final theme = context.watch<ThemeProvider>();
     final connection = context.watch<ConnectionProvider>();
     final user = auth.currentUser;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -21,67 +23,161 @@ class SettingsScreen extends StatelessWidget {
       ),
       body: ListView(
         children: [
-          // Profile section
+          // Profile card
           Container(
-            padding: const EdgeInsets.all(24),
-            child: Row(
+            margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF353750)
+                  : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: isDark
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(10),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+            ),
+            child: Column(
               children: [
-                AvatarWidget(
-                  name: user?.displayName ?? '?',
-                  imageUrl: user?.avatarUrl,
-                  size: 72,
+                Row(
+                  children: [
+                    AvatarWidget(
+                      name: user?.displayName ?? '?',
+                      imageUrl: user?.avatarUrl,
+                      size: 64,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user?.displayName ?? 'Unknown',
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.circle,
+                                size: 8,
+                                color: connection.isConnected
+                                    ? const Color(0xFF4CAF50)
+                                    : Colors.red,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                connection.isConnected
+                                    ? 'Online'
+                                    : 'Offline',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: connection.isConnected
+                                      ? const Color(0xFF4CAF50)
+                                      : Colors.red,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit_rounded),
+                      onPressed: () => _showEditProfile(context),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 16),
+                // User ID row
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withAlpha(10)
+                        : Colors.black.withAlpha(8),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
                     children: [
+                      Icon(
+                        Icons.tag_rounded,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 8),
                       Text(
-                        user?.displayName ?? 'Unknown',
+                        'ID: ${user?.id.substring(0, 8) ?? ''}',
                         style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          fontFamily: 'monospace',
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 1,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '@${user?.username ?? 'unknown'}',
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: Theme.of(context).textTheme.bodySmall?.color,
+                      const Spacer(),
+                      GestureDetector(
+                        onTap: () {
+                          if (user != null) {
+                            Clipboard.setData(
+                                ClipboardData(text: user.id));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: const Text('ID copied!'),
+                                behavior: SnackBarBehavior.floating,
+                                duration: const Duration(seconds: 2),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius:
+                                        BorderRadius.circular(12)),
+                              ),
+                            );
+                          }
+                        },
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.copy_rounded,
+                              size: 14,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Copy',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color:
+                                    Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.edit_rounded),
-                  onPressed: () => _showEditProfile(context),
+                const SizedBox(height: 8),
+                Text(
+                  'Share this ID with friends so they can message you',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: isDark ? Colors.white38 : Colors.black38,
+                  ),
                 ),
               ],
             ),
           ),
-          const Divider(),
-
-          // Connection status
-          _buildSectionTitle(context, 'Connection'),
-          ListTile(
-            leading: Icon(
-              Icons.circle,
-              size: 12,
-              color: connection.isConnected ? Colors.green : Colors.red,
-            ),
-            title: const Text('Server Status'),
-            subtitle: Text(connection.isConnected ? 'Connected' : 'Disconnected'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.dns_rounded),
-            title: const Text('Server URL'),
-            subtitle: Text(connection.serverUrl),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: () => _showEditServer(context),
-          ),
-          const Divider(),
+          const SizedBox(height: 8),
 
           // Appearance
           _buildSectionTitle(context, 'Appearance'),
@@ -94,18 +190,33 @@ class SettingsScreen extends StatelessWidget {
           ),
           const Divider(),
 
+          // Connection (collapsible, less prominent)
+          _buildSectionTitle(context, 'Connection'),
+          ListTile(
+            leading: Icon(
+              Icons.circle,
+              size: 12,
+              color: connection.isConnected ? Colors.green : Colors.red,
+            ),
+            title: const Text('Server Status'),
+            subtitle:
+                Text(connection.isConnected ? 'Connected' : 'Disconnected'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.dns_rounded),
+            title: const Text('Server URL'),
+            subtitle: Text(connection.serverUrl),
+            trailing: const Icon(Icons.chevron_right_rounded),
+            onTap: () => _showEditServer(context),
+          ),
+          const Divider(),
+
           // About
           _buildSectionTitle(context, 'About'),
           const ListTile(
             leading: Icon(Icons.info_rounded),
             title: Text('Version'),
             subtitle: Text('1.0.0'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.code_rounded),
-            title: const Text('Architecture'),
-            subtitle: const Text('P2P with WebSocket signaling'),
-            onTap: () => _showArchInfo(context),
           ),
           const Divider(),
 
@@ -219,13 +330,15 @@ class SettingsScreen extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Edit Profile'),
+        title: const Text('Edit Name'),
         content: TextField(
           controller: controller,
           decoration: const InputDecoration(
-            hintText: 'Display Name',
+            hintText: 'Your name',
             prefixIcon: Icon(Icons.person_rounded),
           ),
+          textCapitalization: TextCapitalization.words,
+          autofocus: true,
         ),
         actions: [
           TextButton(
@@ -234,7 +347,10 @@ class SettingsScreen extends StatelessWidget {
           ),
           FilledButton(
             onPressed: () {
-              auth.updateProfile(displayName: controller.text.trim());
+              final name = controller.text.trim();
+              if (name.isNotEmpty) {
+                auth.updateProfile(displayName: name);
+              }
               Navigator.pop(context);
             },
             child: const Text('Save'),
@@ -271,34 +387,6 @@ class SettingsScreen extends StatelessWidget {
               Navigator.pop(context);
             },
             child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showArchInfo(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('P2P Architecture'),
-        content: const Text(
-          'Messages are routed through a lightweight signaling server using '
-          'WebSocket connections. The server relays messages between peers '
-          'and queues them when a peer is offline.\n\n'
-          'Key features:\n'
-          '- Real-time message delivery via WebSocket\n'
-          '- Typing indicators\n'
-          '- Read receipts\n'
-          '- Online/offline status\n'
-          '- Offline message queuing\n'
-          '- Local notifications',
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Got it'),
           ),
         ],
       ),

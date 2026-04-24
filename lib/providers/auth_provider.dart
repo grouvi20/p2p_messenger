@@ -14,14 +14,25 @@ class AuthProvider extends ChangeNotifier {
   User? get currentUser => _currentUser;
   bool get isLoggedIn => _currentUser != null;
 
-  Future<void> login(String username, String displayName) async {
-    _currentUser = User(
-      id: const Uuid().v4(),
-      username: username,
-      displayName: displayName,
-      isOnline: true,
-      lastSeen: DateTime.now(),
-    );
+  Future<void> login(String name, String displayName) async {
+    // Reuse existing user if available (preserves ID across logout/login)
+    final existing = _storage.getCurrentUser();
+    if (existing != null) {
+      _currentUser = existing.copyWith(
+        displayName: displayName,
+        isOnline: true,
+        lastSeen: DateTime.now(),
+      );
+    } else {
+      final id = const Uuid().v4();
+      _currentUser = User(
+        id: id,
+        username: id.substring(0, 8),
+        displayName: displayName,
+        isOnline: true,
+        lastSeen: DateTime.now(),
+      );
+    }
     await _storage.saveCurrentUser(_currentUser!);
     notifyListeners();
   }
@@ -38,7 +49,7 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> logout() async {
     _currentUser = null;
-    await _storage.clearCurrentUser();
+    // Only clear the in-memory user; keep stored user data for re-login
     notifyListeners();
   }
 }

@@ -138,7 +138,7 @@ class SignalingServer {
 
   void _broadcast(String event, Map<String, dynamic> data,
       {String? exclude}) {
-    for (final entry in _clients.entries) {
+    for (final entry in _clients.entries.toList()) {
       if (entry.key != exclude) {
         _send(entry.key, event, data);
       }
