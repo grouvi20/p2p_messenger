@@ -15,14 +15,14 @@ class MediaService {
   void updateServerUrl(String url) {
     // Convert ws:// to http://
     _serverUrl = url
-        .replaceFirst('ws://', 'http://')
         .replaceFirst('wss://', 'https://')
+        .replaceFirst('ws://', 'http://')
         .replaceFirst('/ws', '');
   }
 
   String get _httpBase => _serverUrl
-      .replaceFirst('ws://', 'http://')
       .replaceFirst('wss://', 'https://')
+      .replaceFirst('ws://', 'http://')
       .replaceFirst('/ws', '');
 
   /// Upload a file and return the server URL path

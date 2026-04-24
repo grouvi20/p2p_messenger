@@ -111,14 +111,16 @@ class _ChatInputState extends State<ChatInput> {
                 Expanded(
                   child: Container(
                     constraints: const BoxConstraints(maxHeight: 120),
-                    child: KeyboardListener(
+                    child: Focus(
                       focusNode: _keyboardFocusNode,
-                      onKeyEvent: (event) {
+                      onKeyEvent: (node, event) {
                         if (event is KeyDownEvent &&
                             event.logicalKey == LogicalKeyboardKey.enter &&
                             !HardwareKeyboard.instance.isShiftPressed) {
                           _send();
+                          return KeyEventResult.handled;
                         }
+                        return KeyEventResult.ignored;
                       },
                       child: TextField(
                         controller: _controller,
