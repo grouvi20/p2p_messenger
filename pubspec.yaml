@@ -1,0 +1,38 @@
+name: p2p_messenger
+description: "P2P Messenger - A peer-to-peer messaging app with WebRTC"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  provider: ^6.1.2
+  web_socket_channel: ^3.0.2
+  uuid: ^4.5.1
+  intl: ^0.20.2
+  path_provider: ^2.1.5
+  shared_preferences: ^2.3.4
+  flutter_local_notifications: ^18.0.1
+  crypto: ^3.0.6
+  file_picker: ^8.3.7
+  image_picker: ^1.1.2
+  http: ^1.2.2
+  audioplayers: ^6.1.0
+  video_player: ^2.9.2
+  record: ^6.0.0
+  camera: ^0.11.1
+  path: ^1.9.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
