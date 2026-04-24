@@ -26,9 +26,11 @@ class ConnectionProvider extends ChangeNotifier {
   bool get isConnected => _state == ConnectionState.connected;
 
   Future<void> connect(String userId) async {
+    if (_state == ConnectionState.connecting || _state == ConnectionState.connected) return;
     _state = ConnectionState.connecting;
     notifyListeners();
 
+    _connectionSubscription?.cancel();
     _connectionSubscription = _signaling.connectionStream.listen((connected) {
       _state =
           connected ? ConnectionState.connected : ConnectionState.disconnected;

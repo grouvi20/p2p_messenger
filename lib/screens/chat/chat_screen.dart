@@ -107,7 +107,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         );
                       }
                       return Text(
-                        widget.chat.peer.isOnline
+                        (chat?.peer.isOnline ?? widget.chat.peer.isOnline)
                             ? 'online'
                             : 'last seen recently',
                         style: TextStyle(

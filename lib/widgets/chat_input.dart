@@ -24,6 +24,7 @@ class _ChatInputState extends State<ChatInput> {
   final _focusNode = FocusNode();
   bool _hasText = false;
   Timer? _typingTimer;
+  bool _typingThrottled = false;
 
   @override
   void initState() {
@@ -34,9 +35,13 @@ class _ChatInputState extends State<ChatInput> {
         setState(() => _hasText = hasText);
       }
       if (hasText) {
-        _typingTimer?.cancel();
-        _typingTimer = Timer(const Duration(milliseconds: 500), () {
+        if (!_typingThrottled) {
           widget.onTyping?.call();
+          _typingThrottled = true;
+        }
+        _typingTimer?.cancel();
+        _typingTimer = Timer(const Duration(seconds: 3), () {
+          _typingThrottled = false;
         });
       }
     });

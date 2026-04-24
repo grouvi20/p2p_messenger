@@ -21,6 +21,15 @@ class P2PService {
   P2PService(this._signaling);
 
   void init(String userId) {
+    // Remove any previously registered handlers to avoid duplicates
+    _signaling.off('message');
+    _signaling.off('message_delivered');
+    _signaling.off('message_read');
+    _signaling.off('typing');
+    _signaling.off('user_online');
+    _signaling.off('user_offline');
+    _signaling.off('queued_messages');
+
     _signaling.on('message', _onMessageReceived);
     _signaling.on('message_delivered', _onMessageDelivered);
     _signaling.on('message_read', _onMessageRead);
