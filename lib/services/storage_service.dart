@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:shared_preferences/shared_preferences.dart';
@@ -6,6 +7,7 @@ import 'package:p2p_messenger/models/user.dart';
 
 class StorageService {
   late SharedPreferences _prefs;
+  final Map<String, Completer<void>?> _writeLocks = {};
 
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
@@ -33,26 +35,45 @@ class StorageService {
 
   String? getServerUrl() => _prefs.getString('server_url');
 
-  // Messages
-  Future<void> saveMessage(Message message) async {
-    final messages = getMessages(message.chatId);
-    messages.add(message);
-    await _prefs.setString(
-      'messages_${message.chatId}',
-      jsonEncode(messages.map((m) => m.toJson()).toList()),
-    );
+  // Serialize writes per chatId to prevent race conditions
+  Future<void> _serializedWrite(String chatId, Future<void> Function() op) async {
+    while (_writeLocks[chatId] != null) {
+      await _writeLocks[chatId]!.future;
+    }
+    final completer = Completer<void>();
+    _writeLocks[chatId] = completer;
+    try {
+      await op();
+    } finally {
+      _writeLocks[chatId] = null;
+      completer.complete();
+    }
   }
 
-  Future<void> updateMessage(Message message) async {
-    final messages = getMessages(message.chatId);
-    final index = messages.indexWhere((m) => m.id == message.id);
-    if (index != -1) {
-      messages[index] = message;
+  // Messages
+  Future<void> saveMessage(Message message) async {
+    await _serializedWrite(message.chatId, () async {
+      final messages = getMessages(message.chatId);
+      messages.add(message);
       await _prefs.setString(
         'messages_${message.chatId}',
         jsonEncode(messages.map((m) => m.toJson()).toList()),
       );
-    }
+    });
+  }
+
+  Future<void> updateMessage(Message message) async {
+    await _serializedWrite(message.chatId, () async {
+      final messages = getMessages(message.chatId);
+      final index = messages.indexWhere((m) => m.id == message.id);
+      if (index != -1) {
+        messages[index] = message;
+        await _prefs.setString(
+          'messages_${message.chatId}',
+          jsonEncode(messages.map((m) => m.toJson()).toList()),
+        );
+      }
+    });
   }
 
   List<Message> getMessages(String chatId) {

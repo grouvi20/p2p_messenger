@@ -62,6 +62,8 @@ class SignalingService {
       send('register', {'userId': _userId});
     } catch (e) {
       debugPrint('Signaling connect error: $e');
+      _isConnected = false;
+      _connectionController.add(false);
       _scheduleReconnect();
     }
   }

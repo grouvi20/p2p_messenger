@@ -20,7 +20,10 @@ class ConnectionProvider extends ChangeNotifier {
 
   ConnectionProvider(this._signaling, this._p2p, this._storage, this._media) {
     final savedUrl = _storage.getServerUrl();
-    if (savedUrl != null) _serverUrl = savedUrl;
+    if (savedUrl != null) {
+      _serverUrl = savedUrl;
+      _media.updateServerUrl(savedUrl);
+    }
   }
 
   ConnectionState get state => _state;
