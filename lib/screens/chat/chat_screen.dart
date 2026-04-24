@@ -40,6 +40,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void didUpdateWidget(ChatScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.chat.id != widget.chat.id) {
+      _previousMessageCount = 0;
       context.read<ChatProvider>().setActiveChat(widget.chat.id);
       _scrollToBottom();
     }

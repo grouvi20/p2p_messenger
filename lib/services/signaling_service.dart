@@ -112,13 +112,15 @@ class SignalingService {
     );
   }
 
-  void send(String event, Map<String, dynamic> data) {
-    if (_channel == null) return;
+  bool send(String event, Map<String, dynamic> data) {
+    if (_channel == null) return false;
     final message = jsonEncode({'event': event, 'data': data});
     try {
       _channel!.sink.add(message);
+      return true;
     } catch (e) {
       debugPrint('Send error: $e');
+      return false;
     }
   }
 

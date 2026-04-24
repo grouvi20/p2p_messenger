@@ -23,7 +23,7 @@ void main() async {
   final signalingService = SignalingService();
   final p2pService = P2PService(signalingService);
   final mediaServerUrl = kIsWeb
-      ? 'https://user:1073c70494848f39d31db38352b7a8c6@interactive-browser-pmtfobtepudqteeu.devinapps.com'
+      ? 'https://p2p-signaling-server-ztvhsuhk.fly.dev'
       : 'http://localhost:8080';
   final mediaService = MediaService(mediaServerUrl);
 

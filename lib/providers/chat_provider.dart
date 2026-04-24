@@ -233,12 +233,13 @@ class ChatProvider extends ChangeNotifier {
     _messages[chatId]!.add(message);
     _storage.saveMessage(message);
 
-    _p2p.sendMessage(message);
+    final sent = _p2p.sendMessage(message);
 
     final idx = _messages[chatId]!.indexWhere((m) => m.id == message.id);
     if (idx != -1) {
+      final newStatus = sent ? MessageStatus.sent : MessageStatus.sending;
       _messages[chatId]![idx] =
-          _messages[chatId]![idx].copyWith(status: MessageStatus.sent);
+          _messages[chatId]![idx].copyWith(status: newStatus);
       _storage.updateMessage(_messages[chatId]![idx]);
     }
 

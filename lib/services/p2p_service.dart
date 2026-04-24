@@ -85,8 +85,8 @@ class P2PService {
     }
   }
 
-  void sendMessage(Message message) {
-    _signaling.send('message', message.toJson());
+  bool sendMessage(Message message) {
+    return _signaling.send('message', message.toJson());
   }
 
   void sendTypingIndicator(String peerId, String senderId) {
