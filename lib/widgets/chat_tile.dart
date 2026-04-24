@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:p2p_messenger/models/chat.dart';
+import 'package:p2p_messenger/models/message.dart';
 import 'package:p2p_messenger/widgets/avatar_widget.dart';
 
 class ChatTile extends StatelessWidget {
@@ -97,7 +98,7 @@ class ChatTile extends StatelessWidget {
                                   ),
                                 )
                               : Text(
-                                  chat.lastMessage?.content ?? 'No messages yet',
+                                  _lastMessagePreview(),
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: theme.textTheme.bodySmall?.color,
@@ -138,5 +139,22 @@ class ChatTile extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _lastMessagePreview() {
+    final msg = chat.lastMessage;
+    if (msg == null) return 'No messages yet';
+    switch (msg.type) {
+      case MessageType.image:
+        return '\u{1F4F7} Photo';
+      case MessageType.voice:
+        return '\u{1F3A4} Voice message';
+      case MessageType.video:
+        return '\u{1F4F9} Video message';
+      case MessageType.file:
+        return '\u{1F4CE} ${msg.fileName ?? 'File'}';
+      default:
+        return msg.content;
+    }
   }
 }

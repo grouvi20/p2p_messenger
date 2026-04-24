@@ -1,6 +1,6 @@
 enum MessageStatus { sending, sent, delivered, read, failed }
 
-enum MessageType { text, image, file, system }
+enum MessageType { text, image, file, voice, video, system }
 
 class Message {
   final String id;
@@ -14,6 +14,8 @@ class Message {
   final String? fileName;
   final int? fileSize;
   final String? replyToId;
+  final int? duration; // seconds, for voice/video
+  final String? mimeType;
 
   const Message({
     required this.id,
@@ -27,6 +29,8 @@ class Message {
     this.fileName,
     this.fileSize,
     this.replyToId,
+    this.duration,
+    this.mimeType,
   });
 
   Message copyWith({
@@ -41,6 +45,8 @@ class Message {
     String? fileName,
     int? fileSize,
     String? replyToId,
+    int? duration,
+    String? mimeType,
   }) {
     return Message(
       id: id ?? this.id,
@@ -54,6 +60,8 @@ class Message {
       fileName: fileName ?? this.fileName,
       fileSize: fileSize ?? this.fileSize,
       replyToId: replyToId ?? this.replyToId,
+      duration: duration ?? this.duration,
+      mimeType: mimeType ?? this.mimeType,
     );
   }
 
@@ -69,6 +77,8 @@ class Message {
         'fileName': fileName,
         'fileSize': fileSize,
         'replyToId': replyToId,
+        'duration': duration,
+        'mimeType': mimeType,
       };
 
   factory Message.fromJson(Map<String, dynamic> json) => Message(
@@ -84,7 +94,13 @@ class Message {
         fileName: json['fileName'] as String?,
         fileSize: json['fileSize'] as int?,
         replyToId: json['replyToId'] as String?,
+        duration: json['duration'] as int?,
+        mimeType: json['mimeType'] as String?,
       );
 
   bool get isTextMessage => type == MessageType.text;
+  bool get isMediaMessage =>
+      type == MessageType.image ||
+      type == MessageType.voice ||
+      type == MessageType.video;
 }

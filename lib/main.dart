@@ -5,6 +5,7 @@ import 'package:p2p_messenger/providers/auth_provider.dart';
 import 'package:p2p_messenger/providers/chat_provider.dart';
 import 'package:p2p_messenger/providers/connection_provider.dart';
 import 'package:p2p_messenger/providers/theme_provider.dart';
+import 'package:p2p_messenger/services/media_service.dart';
 import 'package:p2p_messenger/services/notification_service.dart';
 import 'package:p2p_messenger/services/p2p_service.dart';
 import 'package:p2p_messenger/services/signaling_service.dart';
@@ -20,6 +21,7 @@ void main() async {
 
   final signalingService = SignalingService();
   final p2pService = P2PService(signalingService);
+  final mediaService = MediaService('http://localhost:8080');
 
   runApp(
     MultiProvider(
@@ -37,6 +39,7 @@ void main() async {
             storageService,
           ),
         ),
+        Provider<MediaService>.value(value: mediaService),
         ChangeNotifierProxyProvider<AuthProvider, ChatProvider?>(
           create: (_) => null,
           update: (_, auth, previous) {
@@ -45,6 +48,7 @@ void main() async {
             return ChatProvider(
               p2pService,
               storageService,
+              mediaService,
               auth.currentUser!.id,
             );
           },

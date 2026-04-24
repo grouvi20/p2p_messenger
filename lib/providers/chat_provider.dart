@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:p2p_messenger/models/chat.dart';
 import 'package:p2p_messenger/models/message.dart';
 import 'package:p2p_messenger/models/user.dart';
+import 'package:p2p_messenger/services/media_service.dart';
 import 'package:p2p_messenger/services/notification_service.dart';
 import 'package:p2p_messenger/services/p2p_service.dart';
 import 'package:p2p_messenger/services/storage_service.dart';
@@ -12,6 +14,7 @@ import 'package:p2p_messenger/services/storage_service.dart';
 class ChatProvider extends ChangeNotifier {
   final P2PService _p2p;
   final StorageService _storage;
+  final MediaService _media;
   final String _currentUserId;
 
   final List<Chat> _chats = [];
@@ -21,7 +24,7 @@ class ChatProvider extends ChangeNotifier {
   StreamSubscription<Map<String, dynamic>>? _eventSubscription;
   final Map<String, Timer> _typingTimers = {};
 
-  ChatProvider(this._p2p, this._storage, this._currentUserId) {
+  ChatProvider(this._p2p, this._storage, this._media, this._currentUserId) {
     _loadChats();
     _listenToMessages();
     _listenToEvents();
@@ -100,11 +103,13 @@ class ChatProvider extends ChangeNotifier {
         isPeerTyping: false,
       );
     } else {
-      // New chat from unknown peer
+      final shortId = message.senderId.length > 8
+          ? message.senderId.substring(0, 8)
+          : message.senderId;
       final peer = User(
         id: message.senderId,
-        username: message.senderId.substring(0, 8),
-        displayName: message.senderId.substring(0, 8),
+        username: shortId,
+        displayName: shortId,
         isOnline: true,
         lastSeen: DateTime.now(),
       );
@@ -117,14 +122,24 @@ class ChatProvider extends ChangeNotifier {
       _storage.saveContacts(_chats.map((c) => c.peer).toList());
     }
 
-    // Show notification if not active chat
     if (_activeChatId != chatId) {
       final chat = _chats.firstWhere((c) => c.id == chatId);
+      String body;
+      switch (message.type) {
+        case MessageType.image:
+          body = '📷 Photo';
+        case MessageType.voice:
+          body = '🎤 Voice message';
+        case MessageType.video:
+          body = '📹 Video message';
+        case MessageType.file:
+          body = '📎 ${message.fileName ?? 'File'}';
+        default:
+          body = message.content;
+      }
       NotificationService().showMessageNotification(
         title: chat.peer.displayName,
-        body: message.isTextMessage
-            ? message.content
-            : '${message.type.name} message',
+        body: body,
         payload: chatId,
       );
     }
@@ -194,7 +209,11 @@ class ChatProvider extends ChangeNotifier {
   }
 
   void sendMessage(String chatId, String peerId, String content,
-      {MessageType type = MessageType.text}) {
+      {MessageType type = MessageType.text,
+      String? fileName,
+      int? fileSize,
+      int? duration,
+      String? mimeType}) {
     final message = Message(
       id: const Uuid().v4(),
       chatId: chatId,
@@ -204,6 +223,10 @@ class ChatProvider extends ChangeNotifier {
       type: type,
       status: MessageStatus.sending,
       timestamp: DateTime.now(),
+      fileName: fileName,
+      fileSize: fileSize,
+      duration: duration,
+      mimeType: mimeType,
     );
 
     _messages.putIfAbsent(chatId, () => []);
@@ -212,7 +235,6 @@ class ChatProvider extends ChangeNotifier {
 
     _p2p.sendMessage(message);
 
-    // Update message status to sent
     final idx = _messages[chatId]!.indexWhere((m) => m.id == message.id);
     if (idx != -1) {
       _messages[chatId]![idx] =
@@ -227,6 +249,55 @@ class ChatProvider extends ChangeNotifier {
 
     _sortChats();
     notifyListeners();
+  }
+
+  /// Upload file and send as media message
+  Future<void> sendMediaMessage({
+    required String chatId,
+    required String peerId,
+    required Uint8List bytes,
+    required String fileName,
+    required MessageType type,
+    int? duration,
+  }) async {
+    try {
+      final result = await _media.uploadFile(bytes, fileName);
+      sendMessage(
+        chatId,
+        peerId,
+        result['url'] as String,
+        type: type,
+        fileName: result['fileName'] as String,
+        fileSize: result['fileSize'] as int,
+        duration: duration,
+      );
+    } catch (e) {
+      debugPrint('Failed to send media: $e');
+    }
+  }
+
+  /// Upload file from path and send
+  Future<void> sendFileMessage({
+    required String chatId,
+    required String peerId,
+    required String filePath,
+    required MessageType type,
+    int? duration,
+  }) async {
+    try {
+      final result = await _media.uploadFilePath(filePath);
+      sendMessage(
+        chatId,
+        peerId,
+        result['url'] as String,
+        type: type,
+        fileName: result['fileName'] as String,
+        fileSize: result['fileSize'] as int,
+        duration: duration,
+      );
+    } catch (e) {
+      debugPrint('Failed to send file: $e');
+    }
   }
 
   void sendTyping(String peerId) {

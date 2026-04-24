@@ -48,6 +48,8 @@ class ConnectionProvider extends ChangeNotifier {
   }
 
   Future<void> disconnect() async {
+    _connectionSubscription?.cancel();
+    _connectionSubscription = null;
     await _signaling.disconnect();
     _state = ConnectionState.disconnected;
     notifyListeners();

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:p2p_messenger/core/theme/app_theme.dart';
 import 'package:p2p_messenger/models/message.dart';
+import 'package:p2p_messenger/widgets/voice_message_player.dart';
+import 'package:p2p_messenger/widgets/video_circle_player.dart';
 
 class MessageBubble extends StatelessWidget {
   final Message message;
@@ -17,6 +19,10 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (message.type == MessageType.video) {
+      return _buildVideoCircleBubble(context);
+    }
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bubbleColor = isMine
         ? (isDark ? AppTheme.darkSentBubbleColor : AppTheme.sentBubbleColor)
@@ -39,7 +45,9 @@ class MessageBubble extends StatelessWidget {
           top: showTail ? 8 : 2,
           bottom: 2,
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: message.type == MessageType.image
+            ? const EdgeInsets.all(3)
+            : const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: bubbleColor,
           borderRadius: BorderRadius.only(
@@ -52,37 +60,172 @@ class MessageBubble extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            if (message.type == MessageType.file)
-              _buildFileContent(textColor)
-            else
-              Text(
-                message.content,
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 15,
-                  height: 1.3,
-                ),
-              ),
+            _buildContent(context, textColor),
+            if (message.type != MessageType.image)
+              const SizedBox(height: 4),
+            _buildTimestamp(context, textColor),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent(BuildContext context, Color textColor) {
+    switch (message.type) {
+      case MessageType.image:
+        return _buildImageContent(context);
+      case MessageType.voice:
+        return VoiceMessagePlayer(
+          url: message.content,
+          duration: message.duration ?? 0,
+          isMine: isMine,
+        );
+      case MessageType.file:
+        return _buildFileContent(textColor);
+      default:
+        return Text(
+          message.content,
+          style: TextStyle(
+            color: textColor,
+            fontSize: 15,
+            height: 1.3,
+          ),
+        );
+    }
+  }
+
+  Widget _buildVideoCircleBubble(BuildContext context) {
+    return Align(
+      alignment: isMine ? Alignment.centerRight : Alignment.centerLeft,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: isMine ? 64 : 12,
+          right: isMine ? 12 : 64,
+          top: showTail ? 8 : 2,
+          bottom: 2,
+        ),
+        child: Column(
+          crossAxisAlignment:
+              isMine ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          children: [
+            VideoCirclePlayer(
+              url: message.content,
+              duration: message.duration ?? 0,
+            ),
             const SizedBox(height: 4),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  DateFormat('HH:mm').format(message.timestamp),
-                  style: TextStyle(
-                    color: textColor.withAlpha(178),
-                    fontSize: 11,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    DateFormat('HH:mm').format(message.timestamp),
+                    style: TextStyle(
+                      color: Theme.of(context)
+                          .textTheme
+                          .bodySmall
+                          ?.color
+                          ?.withAlpha(128),
+                      fontSize: 11,
+                    ),
                   ),
-                ),
-                if (isMine) ...[
-                  const SizedBox(width: 4),
-                  _buildStatusIcon(textColor),
+                  if (isMine) ...[
+                    const SizedBox(width: 4),
+                    _buildStatusIcon(
+                      Theme.of(context).textTheme.bodySmall?.color ??
+                          Colors.grey,
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildImageContent(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(15),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          maxWidth: 280,
+          maxHeight: 300,
+        ),
+        child: Image.network(
+          message.content,
+          fit: BoxFit.cover,
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return Container(
+              width: 200,
+              height: 150,
+              color: Colors.grey.withAlpha(30),
+              child: Center(
+                child: CircularProgressIndicator(
+                  value: progress.expectedTotalBytes != null
+                      ? progress.cumulativeBytesLoaded /
+                          progress.expectedTotalBytes!
+                      : null,
+                  strokeWidth: 2,
+                ),
+              ),
+            );
+          },
+          errorBuilder: (context, error, stack) {
+            return Container(
+              width: 200,
+              height: 100,
+              color: Colors.grey.withAlpha(30),
+              child: const Center(
+                child: Icon(Icons.broken_image_rounded, size: 32),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimestamp(BuildContext context, Color textColor) {
+    if (message.type == MessageType.image) {
+      return Padding(
+        padding: const EdgeInsets.only(right: 8, bottom: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              DateFormat('HH:mm').format(message.timestamp),
+              style: TextStyle(
+                color: textColor.withAlpha(178),
+                fontSize: 11,
+              ),
+            ),
+            if (isMine) ...[
+              const SizedBox(width: 4),
+              _buildStatusIcon(textColor),
+            ],
+          ],
+        ),
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          DateFormat('HH:mm').format(message.timestamp),
+          style: TextStyle(
+            color: textColor.withAlpha(178),
+            fontSize: 11,
+          ),
+        ),
+        if (isMine) ...[
+          const SizedBox(width: 4),
+          _buildStatusIcon(textColor),
+        ],
+      ],
     );
   }
 
@@ -107,8 +250,15 @@ class MessageBubble extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.insert_drive_file, color: textColor, size: 20),
-        const SizedBox(width: 8),
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: textColor.withAlpha(25),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(Icons.insert_drive_file_rounded, color: textColor, size: 24),
+        ),
+        const SizedBox(width: 10),
         Flexible(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

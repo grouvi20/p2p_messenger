@@ -15,6 +15,7 @@ class SignalingService {
   String? _serverUrl;
   String? _userId;
   bool _isConnected = false;
+  bool _intentionalDisconnect = false;
   final StreamController<bool> _connectionController =
       StreamController<bool>.broadcast();
 
@@ -41,6 +42,7 @@ class SignalingService {
 
   Future<void> _doConnect() async {
     if (_serverUrl == null || _userId == null) return;
+    _intentionalDisconnect = false;
 
     try {
       final uri = Uri.parse('$_serverUrl?userId=$_userId');
@@ -91,7 +93,9 @@ class SignalingService {
   void _onDone() {
     _isConnected = false;
     _connectionController.add(false);
-    _scheduleReconnect();
+    if (!_intentionalDisconnect) {
+      _scheduleReconnect();
+    }
   }
 
   void _scheduleReconnect() {
@@ -117,11 +121,14 @@ class SignalingService {
   }
 
   Future<void> disconnect() async {
+    _intentionalDisconnect = true;
     _reconnectTimer?.cancel();
     _isConnected = false;
     _connectionController.add(false);
     await _channel?.sink.close();
     _channel = null;
+    _serverUrl = null;
+    _userId = null;
   }
 
   void dispose() {

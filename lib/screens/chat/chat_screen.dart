@@ -1,11 +1,17 @@
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:p2p_messenger/core/utils/responsive.dart';
 import 'package:p2p_messenger/models/chat.dart';
+import 'package:p2p_messenger/models/message.dart';
 import 'package:p2p_messenger/providers/chat_provider.dart';
 import 'package:p2p_messenger/widgets/avatar_widget.dart';
 import 'package:p2p_messenger/widgets/chat_input.dart';
 import 'package:p2p_messenger/widgets/message_bubble.dart';
+import 'package:p2p_messenger/widgets/voice_recorder.dart';
+import 'package:p2p_messenger/widgets/video_circle_recorder.dart';
 
 class ChatScreen extends StatefulWidget {
   final Chat chat;
@@ -18,6 +24,7 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final _scrollController = ScrollController();
+  bool _isRecordingVoice = false;
 
   @override
   void initState() {
@@ -53,6 +60,95 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final image = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1920,
+      maxHeight: 1920,
+      imageQuality: 85,
+    );
+    if (image == null) return;
+
+    final bytes = await image.readAsBytes();
+    if (!mounted) return;
+
+    context.read<ChatProvider>().sendMediaMessage(
+          chatId: widget.chat.id,
+          peerId: widget.chat.peer.id,
+          bytes: bytes,
+          fileName: image.name,
+          type: MessageType.image,
+        );
+    _scrollToBottom();
+  }
+
+  Future<void> _pickFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+
+    final file = result.files.first;
+    if (file.bytes == null) return;
+    if (!mounted) return;
+
+    context.read<ChatProvider>().sendMediaMessage(
+          chatId: widget.chat.id,
+          peerId: widget.chat.peer.id,
+          bytes: file.bytes!,
+          fileName: file.name,
+          type: MessageType.file,
+        );
+    _scrollToBottom();
+  }
+
+  void _startVoiceRecording() {
+    setState(() => _isRecordingVoice = true);
+  }
+
+  void _onVoiceRecorded(String path, int durationSeconds) async {
+    setState(() => _isRecordingVoice = false);
+    if (!mounted) return;
+
+    if (kIsWeb) {
+      // On web, we'd need bytes-based upload
+      return;
+    }
+
+    context.read<ChatProvider>().sendFileMessage(
+          chatId: widget.chat.id,
+          peerId: widget.chat.peer.id,
+          filePath: path,
+          type: MessageType.voice,
+          duration: durationSeconds,
+        );
+    _scrollToBottom();
+  }
+
+  void _openVideoRecorder() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => VideoCircleRecorder(
+          onRecorded: (path, duration) {
+            Navigator.pop(context);
+            if (!mounted) return;
+            context.read<ChatProvider>().sendFileMessage(
+                  chatId: widget.chat.id,
+                  peerId: widget.chat.peer.id,
+                  filePath: path,
+                  type: MessageType.video,
+                  duration: duration,
+                );
+            _scrollToBottom();
+          },
+          onCancel: () => Navigator.pop(context),
+        ),
+      ),
+    );
   }
 
   @override
@@ -191,18 +287,28 @@ class _ChatScreenState extends State<ChatScreen> {
               },
             ),
           ),
-          ChatInput(
-            onSend: (text) {
-              context.read<ChatProvider>().sendMessage(
-                    widget.chat.id,
-                    widget.chat.peer.id,
-                    text,
-                  );
-            },
-            onTyping: () {
-              context.read<ChatProvider>().sendTyping(widget.chat.peer.id);
-            },
-          ),
+          if (_isRecordingVoice)
+            VoiceRecorder(
+              onRecorded: _onVoiceRecorded,
+              onCancel: () => setState(() => _isRecordingVoice = false),
+            )
+          else
+            ChatInput(
+              onSend: (text) {
+                context.read<ChatProvider>().sendMessage(
+                      widget.chat.id,
+                      widget.chat.peer.id,
+                      text,
+                    );
+              },
+              onTyping: () {
+                context.read<ChatProvider>().sendTyping(widget.chat.peer.id);
+              },
+              onAttachImage: _pickImage,
+              onAttachFile: _pickFile,
+              onRecordVoice: _startVoiceRecording,
+              onRecordVideo: _openVideoRecorder,
+            ),
         ],
       ),
     );
